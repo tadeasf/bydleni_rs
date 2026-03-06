@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Bydleni.rs — Czech Housing Affordability{% endblock %}
+
+{% block banner %}
+{% if refreshing %}
+<div class="refresh-bar" hx-get="/api/status" hx-trigger="every 10s" hx-swap="none">
+    Refreshing data from sources...
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="hero anim">
+    <div class="hero-kicker">Czech Republic Housing Data</div>
+    <h1 class="hero-title">How many years of <em>net salary</em><br>to buy a <em>60m&sup2; flat</em>?</h1>
+    <p class="hero-sub">
+        Aggregated data from Czech Statistical Office, Czech National Bank,
+        Sreality, and FRED. Updated automatically.
+    </p>
+    {% if last_refresh != "" %}
+    <p class="hero-meta">Last refresh: {{ last_refresh }}</p>
+    {% endif %}
+</div>
+
+<hr class="rule anim d1">
+
+<!-- My Budget Scenario -->
+<div class="scenario-panel anim d2" id="scenario-panel">
+    <div class="chart-label">My budget scenario</div>
+    <div id="scenario-summary"></div>
+    <form id="scenario-form" hx-post="/api/scenario/regions" hx-target="#scenario-regions" hx-swap="innerHTML">
+        <div class="scenario-grid">
+            <div>
+                <label class="flabel" for="sc-net-income">Monthly net income (CZK)</label>
+                <input type="number" id="sc-net-income" name="net_income" placeholder="52000" class="finput" required>
+            </div>
+            <div>
+                <label class="flabel" for="sc-savings">Current savings (CZK)</label>
+                <input type="number" id="sc-savings" name="current_savings" value="0" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-flat-size">Flat size (m&sup2;)</label>
+                <input type="number" id="sc-flat-size" name="flat_size_m2" value="60" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-rate">Mortgage rate (%)</label>
+                <input type="number" step="0.01" id="sc-rate" name="mortgage_rate_pct" value="5.0" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-ltv">LTV (%)</label>
+                <input type="number" id="sc-ltv" name="ltv_pct" value="80" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-years">Mortgage term (years)</label>
+                <input type="number" id="sc-years" name="mortgage_years" value="30" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-expenses">Monthly expenses (CZK)</label>
+                <input type="number" id="sc-expenses" name="monthly_expenses" value="17000" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="sc-return">Investment return (%)</label>
+                <input type="number" step="0.1" id="sc-return" name="investment_return_pct" value="7" class="finput">
+            </div>
+            <div class="scenario-actions">
+                <button type="submit" class="fbtn">Show my scenario</button>
+                <button type="button" class="scenario-reset" id="scenario-reset" style="display:none">Reset</button>
+            </div>
+        </div>
+    </form>
+    <div id="scenario-errors"></div>
+    <div id="scenario-regions" style="margin-top:16px"></div>
+</div>
+
+<div class="chart-wrap anim d2">
+    <div class="chart-label">Years of net salary to buy 60m&sup2; by region</div>
+    <div class="chart-box">
+        <canvas id="affordability-chart"></canvas>
+    </div>
+    {{ explain_years|safe }}
+</div>
+
+<div style="height:24px"></div>
+
+<!-- Interactive SVG Map -->
+<div class="map-container anim d3" id="map-container" data-regions="{{ regions_json }}">
+    <div class="chart-label">Regional affordability map</div>
+    <div class="map-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--heat-1)"></span>&lt; 8.3 yr</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--heat-2)"></span>8.3–9.2</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--heat-3)"></span>9.2–10.8</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--heat-4)"></span>10.8–13.3</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--heat-5)"></span>&gt; 13.3 yr</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--text-muted)"></span>No data</span>
+    </div>
+    <div class="map-wrap" id="map-wrap">
+        <!-- SVG loaded via fetch -->
+    </div>
+    <div class="map-tooltip" id="map-tooltip"></div>
+</div>
+
+{% if !top_stories.is_empty() %}
+<div class="anim d3" style="margin-top:24px">
+    <div class="chart-label">Key insights <a href="/stories" class="story-see-all">See all stories &rarr;</a></div>
+    <div class="story-strip">
+        {% for s in top_stories %}
+        <a href="/region/{{ s.region_slug }}" class="story-mini {{ s.color_class }}">
+            <div class="story-tag">{{ s.kind_label }}</div>
+            <div class="story-headline">{{ s.headline }}</div>
+            <div class="story-body">{{ s.body }}</div>
+            <div class="story-region">{{ s.region_name }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Dramatic interstitial -->
+<div class="interstitial anim d4">
+    <h2 class="interstitial-title">The numbers tell a story.<br>
+    <em>And it's not getting better.</em></h2>
+</div>
+
+<!-- Full-width affordability forecast -->
+<div class="chart-wrap full anim d4">
+    <div class="chart-tagline">Where is housing headed?</div>
+    <div class="chart-label">Housing affordability forecast (national)</div>
+    <div class="chart-box" style="height:350px">
+        <canvas id="forecast-chart"></canvas>
+    </div>
+    {{ explain_forecast|safe }}
+</div>
+
+<!-- Full-width rent burden forecast -->
+<div class="chart-wrap full anim d4">
+    <div class="chart-tagline">Half your paycheck for a roof?</div>
+    <div class="chart-label">How much of your net salary will rent cost?</div>
+    <div class="chart-box" style="height:350px">
+        <canvas id="rent-burden-chart"></canvas>
+    </div>
+    {{ explain_rent_burden|safe }}
+</div>
+
+<div style="height:24px"></div>
+
+<!-- Data table -->
+<div class="anim d4">
+    <div class="chart-label">All regions — detailed data</div>
+    <div style="overflow-x:auto">
+        <table class="dtable">
+            <thead>
+                <tr>
+                    <th>Region</th>
+                    <th class="r">Years (net)</th>
+                    <th class="r">Price/m&sup2;</th>
+                    <th class="r">Avg wage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in regions %}
+                <tr>
+                    <td><a href="/region/{{ r.slug }}" class="link">{{ r.name }}</a></td>
+                    <td class="r mono {{ r.color_class }}">{{ r.years }}</td>
+                    <td class="r mono">{{ r.price_m2 }}/m&sup2;</td>
+                    <td class="r mono">{{ r.wage }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    try { loadBarChart('affordability-chart', '/api/chart/affordability?region=all'); } catch(e) { console.error(e); }
+    try { loadForecastChart('forecast-chart', '/api/chart/forecast', { yLabel: 'Index (base year=100)' }); } catch(e) { console.error(e); }
+    try { loadForecastChart('rent-burden-chart', '/api/chart/rent-burden', { yLabel: '% of net salary' }); } catch(e) { console.error(e); }
+    try { initMap(); } catch(e) { console.error(e); }
+});
+
+// City slug -> kraj SVG id mapping
+const CITY_TO_KRAJ = {
+    'praha': 'praha',
+    'brno': 'jihomoravsky',
+    'ostrava': 'moravskoslezsky',
+    'plzen': 'plzensky',
+    'liberec': 'liberecky',
+    'olomouc': 'olomoucky',
+    'hradec_kralove': 'kralovehradecky',
+    'ceske_budejovice': 'jihocesky',
+    'usti_nad_labem': 'ustecky',
+    'pardubice': 'pardubicky',
+    'zlin': 'zlinsky',
+    'karlovy_vary': 'karlovarsky',
+    'jihlava': 'vysocina',
+    'stredocesky': 'stredocesky',
+};
+
+function heatColor(years) {
+    const style = getComputedStyle(document.documentElement);
+    if (years > 13.3) return style.getPropertyValue('--heat-5').trim();
+    if (years > 10.8) return style.getPropertyValue('--heat-4').trim();
+    if (years > 9.2) return style.getPropertyValue('--heat-3').trim();
+    if (years > 8.3) return style.getPropertyValue('--heat-2').trim();
+    return style.getPropertyValue('--heat-1').trim();
+}
+
+function initMap() {
+    const container = document.getElementById('map-container');
+    const wrap = document.getElementById('map-wrap');
+    const tooltip = document.getElementById('map-tooltip');
+    if (!container || !wrap) return;
+
+    const regionsData = JSON.parse(container.dataset.regions || '[]');
+    const regionMap = {};
+    regionsData.forEach(r => {
+        const krajId = CITY_TO_KRAJ[r.slug];
+        if (krajId) regionMap[krajId] = r;
+    });
+
+    fetch('/static/czech-map.svg')
+        .then(r => { if (!r.ok) throw new Error(`SVG fetch failed: ${r.status}`); return r.text(); })
+        .then(svgText => {
+            wrap.innerHTML = svgText;
+            const svg = wrap.querySelector('svg');
+            if (!svg) return;
+
+            const style = getComputedStyle(document.documentElement);
+            const noDataColor = style.getPropertyValue('--text-muted').trim();
+
+            svg.querySelectorAll('.map-region').forEach(path => {
+                const id = path.dataset.region || path.id.replace('region-', '');
+                const data = regionMap[id];
+
+                if (data) {
+                    path.style.fill = heatColor(data.years_raw);
+                    path.style.cursor = 'pointer';
+
+                    path.addEventListener('click', () => {
+                        window.location.href = '/region/' + data.slug;
+                    });
+
+                    path.addEventListener('mouseenter', (e) => {
+                        tooltip.innerHTML = '<strong>' + data.name + '</strong><br>'
+                            + data.years + ' years<br>'
+                            + data.price_m2 + '/m&sup2;<br>'
+                            + 'wage ' + data.wage;
+                        tooltip.style.display = 'block';
+                    });
+
+                    path.addEventListener('mousemove', (e) => {
+                        const rect = container.getBoundingClientRect();
+                        tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+                        tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+                    });
+
+                    path.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+                } else {
+                    path.style.fill = noDataColor;
+                }
+            });
+
+            // Re-color on theme change
+            window.addEventListener('themechange', () => {
+                const s = getComputedStyle(document.documentElement);
+                const nd = s.getPropertyValue('--text-muted').trim();
+                svg.querySelectorAll('.map-region').forEach(p => {
+                    const rid = p.dataset.region || p.id.replace('region-', '');
+                    const d = regionMap[rid];
+                    p.style.fill = d ? heatColor(d.years_raw) : nd;
+                });
+            });
+        })
+        .catch(e => console.error('Map load failed:', e));
+}
+</script>
+{% endblock %}

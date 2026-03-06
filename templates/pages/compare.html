@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Compare regions — Bydleni.rs{% endblock %}
+
+{% block banner %}
+{% if refreshing %}
+<div class="refresh-bar">Refreshing data from sources...</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="hero anim" style="padding-bottom:24px">
+    <div class="hero-kicker">Regional comparison</div>
+    <h1 class="hero-title">Compare <em>all regions</em></h1>
+</div>
+
+<hr class="rule anim d1">
+
+<div class="grid-2 anim d2" style="margin-bottom:24px">
+    <div class="chart-wrap">
+        <div class="chart-label">Average monthly wage by region</div>
+        <div class="chart-box">
+            <canvas id="wages-chart"></canvas>
+        </div>
+    </div>
+    <div class="chart-wrap">
+        <div class="chart-label">Years of net salary to buy 60m&sup2;</div>
+        <div class="chart-box">
+            <canvas id="affordability-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="anim d3">
+    {{ explain_comparison|safe }}
+    <button id="scenario-compare-toggle" class="scenario-toggle" style="display:none">Show personalized ranking</button>
+    <div class="chart-wrap" style="padding:0;overflow:hidden">
+        <table class="dtable">
+            <thead>
+                <tr id="compare-thead-default">
+                    <th>Region</th>
+                    <th class="r">Years (net)</th>
+                    <th class="r">Price / m&sup2;</th>
+                    <th class="r">Wage</th>
+                </tr>
+                <tr id="compare-thead-scenario" style="display:none">
+                    <th>Region</th>
+                    <th class="r">Flat price</th>
+                    <th class="r">Payment</th>
+                    <th class="r">PTI</th>
+                    <th class="r">To deposit</th>
+                </tr>
+            </thead>
+            <tbody id="default-compare-body">
+                {% for r in regions %}
+                <tr>
+                    <td><a href="/region/{{ r.slug }}" class="link">{{ r.name }}</a></td>
+                    <td class="r mono {{ r.color_class }}">{{ r.years }}</td>
+                    <td class="r mono t2">{{ r.price_m2 }}</td>
+                    <td class="r mono t2">{{ r.wage }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tbody id="scenario-compare-body" style="display:none"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadBarChart('wages-chart', '/api/chart/wages?region=all');
+    loadBarChart('affordability-chart', '/api/chart/affordability?region=all');
+});
+</script>
+{% endblock %}

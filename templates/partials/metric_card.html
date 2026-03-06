@@ -1,0 +1,12 @@
+<a href="/region/{{ r.slug }}" class="rcard anim">
+    <div class="rcard-head">
+        <div class="rcard-name">{{ r.name }}</div>
+        <svg class="rcard-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+    <div class="rcard-num {{ r.color_class }}">{{ r.months }}</div>
+    <div class="rcard-unit">months of salary</div>
+    <div class="rcard-foot">
+        <span>{{ r.price_m2 }}/m&sup2;</span>
+        <span>wage {{ r.wage }}</span>
+    </div>
+</a>

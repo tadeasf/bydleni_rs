@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Stories — Bydleni.rs{% endblock %}
+
+{% block banner %}
+{% if refreshing %}
+<div class="refresh-bar">Refreshing data from sources...</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="hero anim">
+    <div class="hero-kicker">Affordability Trajectory</div>
+    <h1 class="hero-title">The stories behind<br><em>the numbers</em></h1>
+    <p class="hero-sub">
+        Data-driven insights derived from historical snapshots, wage trends,
+        and housing market indicators across Czech regions.
+    </p>
+</div>
+
+<hr class="rule anim d1">
+
+{% if !top_stories.is_empty() %}
+<div class="anim d2">
+    <div class="chart-label">Most notable findings</div>
+    <div class="story-grid">
+        {% for s in top_stories %}
+        <a href="/region/{{ s.region_slug }}" class="story-card {{ s.color_class }}">
+            <div class="story-tag">{{ s.kind_label }}</div>
+            <div class="story-headline">{{ s.headline }}</div>
+            <div class="story-body">{{ s.body }}</div>
+            <div class="story-region">{{ s.region_name }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if !national_stories.is_empty() %}
+<div class="interstitial anim d3">
+    <h2 class="interstitial-title">The national picture.<br>
+    <em>How does the average Czech fare?</em></h2>
+</div>
+
+<div class="anim d3">
+    <div class="chart-label">National insights</div>
+    <div class="story-strip">
+        {% for s in national_stories %}
+        <div class="story-mini {{ s.color_class }}">
+            <div class="story-tag">{{ s.kind_label }}</div>
+            <div class="story-headline">{{ s.headline }}</div>
+            <div class="story-body">{{ s.body }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% for group in region_groups %}
+<div class="chart-wrap anim d4" style="margin-top:24px">
+    <div class="chart-label">
+        <a href="/region/{{ group.slug }}" class="link">{{ group.name }}</a>
+    </div>
+    <div class="story-strip">
+        {% for s in group.stories %}
+        <div class="story-mini {{ s.color_class }}">
+            <div class="story-tag">{{ s.kind_label }}</div>
+            <div class="story-headline">{{ s.headline }}</div>
+            <div class="story-body">{{ s.body }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

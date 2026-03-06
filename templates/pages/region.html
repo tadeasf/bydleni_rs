@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ name }} — Bydleni.rs{% endblock %}
+
+{% block banner %}
+{% if refreshing %}
+<div class="refresh-bar">Refreshing data from sources...</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<a href="/" class="back anim">&larr; Back to overview</a>
+
+<h1 class="hero-title anim d1" style="padding-top:8px">{{ name }}</h1>
+<hr class="rule anim d2">
+
+<!-- Hero metrics — 3 key stats -->
+<div class="hero-metrics anim d3">
+    <div class="mcard hero-stat">
+        <div class="mcard-label">Months of net salary to buy 60m&sup2;</div>
+        <div class="mcard-val">{{ months_to_buy }}</div>
+        <div class="mcard-note">Gross: {{ months_to_buy_gross }} months</div>
+        {{ explain_months|safe }}
+    </div>
+    <div class="mcard hero-stat">
+        <div class="mcard-label">Avg price / m&sup2;</div>
+        <div class="mcard-val">{{ price_m2 }}</div>
+        {{ explain_price|safe }}
+    </div>
+    <div class="mcard hero-stat">
+        <div class="mcard-label">Avg net monthly wage</div>
+        <div class="mcard-val">{{ wage_net }}</div>
+        <div class="mcard-note">Gross: {{ wage }}</div>
+    </div>
+</div>
+
+{% if !stories.is_empty() %}
+<div class="anim d3" style="margin-bottom:16px">
+    <div class="chart-label">Key insights for {{ name }}</div>
+    <div class="story-strip">
+        {% for s in stories %}
+        <div class="story-mini {{ s.color_class }}">
+            <div class="story-tag">{{ s.kind_label }}</div>
+            <div class="story-headline">{{ s.headline }}</div>
+            <div class="story-body">{{ s.body }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Personalized scenario (populated by scenario.js if active) -->
+<div id="scenario-detail" data-region="{{ slug }}" class="anim d3" style="margin-bottom:16px"></div>
+
+<!-- Purchase & Rental sections -->
+<div class="sections-2col anim d4">
+    <div>
+        <div class="section-heading">Purchase</div>
+        <div class="metric-group">
+            <div class="metric-row">
+                <span class="metric-row-label">60m&sup2; flat price</span>
+                <span class="metric-row-val">{{ flat_price }}</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-row-label">Mortgage rate</span>
+                <span class="metric-row-val">{{ mortgage_rate }}</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-row-label">Monthly payment</span>
+                <span class="metric-row-val">{{ monthly_payment }}<span class="metric-row-note">80% LTV, 30y</span></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-row-label">Payment / net wage</span>
+                <span class="metric-row-val">{{ payment_to_wage }}</span>
+            </div>
+        </div>
+        {{ explain_mortgage|safe }}
+    </div>
+    <div>
+        <div class="section-heading">Rental</div>
+        <div class="metric-group">
+            <div class="metric-row">
+                <span class="metric-row-label">Monthly rent (60m&sup2;)</span>
+                <span class="metric-row-val">{{ monthly_rent }}</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-row-label">Rent vs mortgage</span>
+                <span class="metric-row-val">{{ rent_vs_mortgage }}<span class="metric-row-note">&gt;1.0 = renting costs more</span></span>
+            </div>
+        </div>
+        {{ explain_rent|safe }}
+    </div>
+</div>
+
+<!-- Savings & Investment section -->
+<div class="sections-2col anim d5" style="margin-top:16px">
+    <div>
+        <div class="section-heading">Savings &amp; Investment</div>
+        <div class="metric-group">
+            <div class="metric-row">
+                <span class="metric-row-label">Living expenses</span>
+                <span class="metric-row-val">{{ living_expenses }}<span class="metric-row-note">excl. rent</span></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-row-label">Monthly savings</span>
+                <span class="metric-row-val">{{ monthly_savings }}</span>
+            </div>
+        </div>
+        {{ explain_savings|safe }}
+    </div>
+    <div>
+        <div class="section-heading">Time to ownership</div>
+        <div class="mcard hero-stat" style="margin-top:12px">
+            <div class="mcard-label">Years to save (investing at 7%)</div>
+            <div class="mcard-val">{{ years_to_save }}</div>
+        </div>
+    </div>
+</div>
+
+{% if !sale_listings.is_empty() %}
+<div class="chart-wrap anim d6" style="margin-top:24px;margin-bottom:16px">
+    <div class="chart-label">Example sale listings (near median {{ sale_median_price_m2 }} CZK/m&sup2;)</div>
+    <div class="listing-grid">
+        {% for l in sale_listings %}
+        <a href="{{ l.url }}" target="_blank" rel="noopener" class="listing-card">
+            <div class="listing-name">{{ l.name }}</div>
+            <div class="listing-price">{{ l.price }}</div>
+            <div class="listing-meta">{{ l.area }} &middot; {{ l.price_per_m2 }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if !rent_listings.is_empty() %}
+<div class="chart-wrap anim d6" style="margin-bottom:16px">
+    <div class="chart-label">Example rent listings (near median {{ rent_median_price_m2 }} CZK/m&sup2;)</div>
+    <div class="listing-grid">
+        {% for l in rent_listings %}
+        <a href="{{ l.url }}" target="_blank" rel="noopener" class="listing-card">
+            <div class="listing-name">{{ l.name }}</div>
+            <div class="listing-price">{{ l.price }}</div>
+            <div class="listing-meta">{{ l.area }} &middot; {{ l.price_per_m2 }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="grid-2 anim d7" style="margin-bottom:24px">
+    <div class="chart-wrap">
+        <div class="chart-label">Price / m&sup2; history</div>
+        <div class="chart-box" style="height:260px">
+            <canvas id="price-chart"></canvas>
+        </div>
+    </div>
+    <div class="chart-wrap">
+        <div class="chart-label">Rent vs mortgage (monthly)</div>
+        <div class="chart-box" style="height:260px">
+            <canvas id="rent-vs-buy-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="chart-wrap anim d8" style="margin-bottom:24px">
+    <div class="chart-label">Affordability over time (months of net salary)</div>
+    <div class="chart-box" style="height:260px">
+        <canvas id="history-chart"></canvas>
+    </div>
+</div>
+
+<div class="grid-2 anim d9" style="margin-bottom:24px">
+    <div class="chart-wrap">
+        <div class="chart-label">Mortgage calculator</div>
+        <form hx-post="/api/mortgage-calc" hx-target="#calc-result" hx-swap="innerHTML" class="fgrid">
+            <div>
+                <label class="flabel" for="price">Property price (CZK)</label>
+                <input type="number" id="price" name="price" value="{{ flat_price_raw }}" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="rate">Annual rate (%)</label>
+                <input type="number" step="0.01" id="rate" name="rate" value="{{ mortgage_rate_raw }}" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="years">Term (years)</label>
+                <input type="number" id="years" name="years" value="30" class="finput">
+            </div>
+            <div>
+                <label class="flabel" for="ltv">LTV (%)</label>
+                <input type="number" id="ltv" name="ltv" value="80" class="finput">
+            </div>
+            <div>
+                <button type="submit" class="fbtn">Calculate</button>
+            </div>
+        </form>
+        <div id="calc-result"></div>
+    </div>
+
+    <div class="chart-wrap">
+        <div class="chart-label">Savings calculator</div>
+        <form hx-post="/api/recalc-savings" hx-target="#savings-result" hx-swap="innerHTML" class="fgrid">
+            <input name="region" type="hidden" value="{{ slug }}">
+            <div>
+                <label class="flabel">Monthly net income (CZK)</label>
+                <input name="net_income" type="number" value="{{ wage_net_raw }}" class="finput">
+            </div>
+            <div>
+                <label class="flabel">Monthly expenses (CZK)</label>
+                <input name="expenses" type="number" value="{{ living_expenses_raw }}" class="finput">
+            </div>
+            <div>
+                <label class="flabel">Annual return (%)</label>
+                <input name="return_pct" type="number" step="0.1" value="7" class="finput">
+            </div>
+            <div>
+                <button type="submit" class="fbtn">Recalculate</button>
+            </div>
+        </form>
+        <div id="savings-result"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadLineChart('price-chart', '/api/chart/prices?region={{ slug }}');
+    loadBarChart('rent-vs-buy-chart', '/api/chart/rent-vs-buy?region={{ slug }}');
+    loadLineChart('history-chart', '/api/chart/history?region={{ slug }}');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+[book]
+authors = ["tadeasf"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Bydleni.rs Documentation"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/tadeasf/bydleni_rs"

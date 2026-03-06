@@ -1,0 +1,9 @@
+/target
+.env
+*.db
+*.db-shm
+*.db-wal
+docs/book/
+/.playwright-mcp
+/.serena
+/docs/plans
