@@ -1,7 +1,6 @@
 [book]
 authors = ["tadeasf"]
 language = "en"
-multilingual = false
 src = "src"
 title = "Bydleni.rs Documentation"
 
